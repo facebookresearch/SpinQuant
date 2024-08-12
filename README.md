@@ -99,7 +99,7 @@ You can download the optimized rotation matrices [here](https://drive.google.com
 
 ## Acknowledgement
 
-This code is partially based on [HuggingFace transformers](https://github.com/huggingface/transformers), [QuaRot](https://github.com/spcl/QuaRot) and [Optimization-on-Stiefel-Manifold-via-Cayley-Transform](https://github.com/JunLi-Galios/Optimization-on-Stiefel-Manifold-via-Cayley-Transform/tree/master).
+The results reported in the paper is run with the internal LLaMA codebase in Meta. We reproduced our experiments with HuggingFace codebase and released code here, which partially based on [HuggingFace transformers](https://github.com/huggingface/transformers), [QuaRot](https://github.com/spcl/QuaRot), [QuIP\#](https://github.com/Cornell-RelaxML/quip-sharp) and [Optimization-on-Stiefel-Manifold-via-Cayley-Transform](https://github.com/JunLi-Galios/Optimization-on-Stiefel-Manifold-via-Cayley-Transform/tree/master).
 
 ## Contact
 
