@@ -107,6 +107,12 @@ Zechun Liu, Reality Labs, Meta Inc (zechunliu at meta dot com)
 
 Changsheng Zhao, Reality Labs, Meta Inc (cszhao at meta dot com)
 
+## Relevant Projects
+
+MobileLLM: Optimizing Sub-billion Parameter Language Models for On-Device Use Cases [[Paper](https://arxiv.org/pdf/2402.14905)] [[Code](https://github.com/facebookresearch/MobileLLM)]
+
+LLM-QAT: Data-Free Quantization Aware Training for Large Language Models [[Paper](https://arxiv.org/pdf/2305.17888)] [[Code](https://github.com/facebookresearch/LLM-QAT)]
+
 ## License
 
 BiT is CC-BY-NC 4.0 licensed as of now.
