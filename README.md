@@ -49,7 +49,7 @@ Step 2: Run PTQ evaluation with optimized rotation
 * `bash scripts/2_eval_ptq.sh $model_name $w_bit $a_bit $kv_bit`
 
 ### 3. Export to ExecuTorch
-We also support exporting the quantized model to ExecuTorch, which allows us to utilize the quantization kernels and achieve real-time speedup. For more information on kernel implementation details, please see [ExecuTorch](https://pytorch.org/executorch/stable/index.html), and [ExecuTorch for LLaMA](https://github.com/pytorch/executorch/blob/main/examples/models/llama2/README.md). We currently support 4-bit weight (group-size 32) and 8-bit dynamic activation quantization.
+We also support exporting the quantized model to ExecuTorch, which allows us to utilize the quantization kernels and achieve real-time speedup. For more information on kernel implementation details, please see [ExecuTorch](https://pytorch.org/executorch/stable/index.html), and [ExecuTorch for LLaMA](https://github.com/pytorch/executorch/blob/main/examples/models/llama2/README.md). We currently support 4-bit weight (group-size 256) and 8-bit dynamic activation quantization.
 
 To obtain ExecuTorch-compatible quantized models, you can use the following scripts:
 

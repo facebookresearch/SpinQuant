@@ -26,4 +26,4 @@ torchrun --nnodes=1 --nproc_per_node=8 optimize_rotation.py \
 --a_bits 8 \
 --w_clip \
 --a_asym \
---w_groupsize 32
+--w_groupsize 256
