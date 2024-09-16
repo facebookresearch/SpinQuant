@@ -315,6 +315,7 @@ class WeightQuantizer(torch.nn.Module):
         norm: float = 2.4,
         grid: int = 100,
         maxshrink: float = 0.8,
+        weight_groupsize: int = -1,
     ) -> None:
         self.bits = bits
         self.perchannel = perchannel
@@ -323,10 +324,69 @@ class WeightQuantizer(torch.nn.Module):
         self.norm = norm
         self.grid = grid
         self.maxshrink = maxshrink
+        self.weight_groupsize = weight_groupsize
         if sym:
             self.maxq = torch.tensor(2 ** (bits - 1) - 1)
         else:
             self.maxq = torch.tensor(2**bits - 1)
+
+    def find_params_weight_groupwise(self, x) -> None:
+        init_shape = x.shape
+        x = x.reshape(
+            x.shape[-2], x.shape[-1] // self.weight_groupsize, self.weight_groupsize
+        )
+
+        xmax = torch.amax(x, dim=-1, keepdim=True)
+        xmin = torch.amin(x, dim=-1, keepdim=True)
+
+        if self.sym:
+            xmax = torch.maximum(torch.abs(xmin), xmax).clamp(min=1e-5)
+            self.scale = xmax / self.maxq
+            self.zero = torch.zeros_like(self.scale)
+        else:
+            tmp = (xmin == 0) & (xmax == 0)
+            xmin[tmp] = -1
+            xmax[tmp] = +1
+            self.scale = (xmax - xmin).clamp(min=1e-5) / self.maxq
+            self.zero = torch.round(-xmin / self.scale)
+
+        self.scale = self.scale.repeat(1, 1, self.weight_groupsize)
+        self.zero = self.zero.repeat(1, 1, self.weight_groupsize)
+
+        if self.mse:
+            best = torch.full(
+                [x.shape[0], x.shape[1]], float("inf"), device=x.device
+            ).type_as(x)
+            for i in range(int(self.maxshrink * self.grid)):
+                p = 1 - i / self.grid
+                xmin1 = p * xmin
+                xmax1 = p * xmax
+
+                if self.sym:
+                    scale1 = xmax1 / self.maxq
+                    zero1 = torch.zeros_like(scale1)
+                    scale1 = scale1.repeat(1, 1, self.weight_groupsize)
+                    zero1 = zero1.repeat(1, 1, self.weight_groupsize)
+                    q = sym_quant_dequant(x, scale1, self.maxq)
+                else:
+                    scale1 = (xmax1 - xmin1) / self.maxq
+                    zero1 = torch.round(-xmin1 / scale1)
+                    scale1 = scale1.repeat(1, 1, self.weight_groupsize)
+                    zero1 = zero1.repeat(1, 1, self.weight_groupsize)
+                    q = asym_quant_dequant(x, scale1, zero1, self.maxq)
+
+                q -= x
+                q.abs_()
+                q.pow_(self.norm)
+                err = torch.sum(q, -1)
+                tmp = err < best
+                if torch.any(tmp):
+                    best[tmp] = err[tmp]
+                    self.scale[tmp] = scale1[tmp]
+                    self.zero[tmp] = zero1[tmp]
+
+        self.scale = self.scale.reshape(init_shape)
+        self.zero = self.zero.reshape(init_shape)
 
     def find_params(self, x) -> None:
         if self.bits == 16:
@@ -335,7 +395,13 @@ class WeightQuantizer(torch.nn.Module):
         self.maxq = self.maxq.to(dev)
 
         shape = x.shape
-        if self.perchannel:
+
+        if self.weight_groupsize > 0:
+            # group-wise per-token quantization
+            self.find_params_weight_groupwise(x)
+            # utils.cleanup_memory(verbos=False)
+            return
+        elif self.perchannel:
             x = x.flatten(1)
         else:
             x = x.flatten().unsqueeze(0)
@@ -403,6 +469,16 @@ class WeightQuantizer(torch.nn.Module):
             )
         return x
 
+    # Return int value and scale in addtional to fake quantized weight
+    def fake_quantize(self, x):
+        x_dtype = x.dtype
+        if self.ready() and self.bits < 16:
+            scale = self.scale.to(x.device)
+            q = torch.clamp(torch.round(x / scale), -(self.maxq + 1), self.maxq)
+            return (scale * q).to(x_dtype), q, scale
+        else:
+            return None, None, None
+
     def enabled(self):
         return self.maxq > 0
 
@@ -426,7 +502,7 @@ def add_actquant(
         tmp = getattr(module, attr)
         if type(tmp) in layers:
             setattr(module, attr, ActQuantWrapper(tmp))
-        if type(tmp) == torch.nn.Sequential:
+        if type(tmp) is torch.nn.Sequential:
             replaced = []
             for i, child in enumerate(tmp.children()):
                 if type(child) in layers:
@@ -434,7 +510,7 @@ def add_actquant(
                 else:
                     replaced.append(child)
             setattr(module, attr, torch.nn.Sequential(*replaced))
-        if type(tmp) == torch.nn.ModuleList:
+        if type(tmp) is torch.nn.ModuleList:
             replaced = []
             for i, child in enumerate(tmp.children()):
                 if type(child) in layers:
@@ -451,6 +527,9 @@ def find_qlayers(
     layers=[torch.nn.Linear, ActQuantWrapper, QuantizeLinear],
     name: str = "",
 ):
+    # fix for llama embedding layer
+    if type(module) in [torch.nn.Embedding] and type(module) in layers:
+        return {"embed_tokens": module}
     if type(module) in layers:
         return {name: module}
     res = {}

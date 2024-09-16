@@ -50,9 +50,14 @@ class GPTQ:
         groupsize=-1,
         actorder=False,
         static_groups=False,
+        export_to_et=False,
     ):
         W = self.layer.weight.data.clone()
         W = W.float()
+        Scale = self.layer.weight.data.clone()
+        Scale = Scale.float()
+        W_int = self.layer.weight.data.clone()
+        W_int = W_int.float()
 
         tick = time.time()
 
@@ -66,7 +71,6 @@ class GPTQ:
         W[:, dead] = 0
 
         if static_groups:
-
             groups = []
             for i in range(0, self.columns, groupsize):
                 quantizer = copy.deepcopy(self.quantizer)
@@ -96,6 +100,8 @@ class GPTQ:
 
             W1 = W[:, i1:i2].clone()
             Q1 = torch.zeros_like(W1)
+            W_int1 = torch.zeros_like(W1)
+            Scale1 = torch.zeros_like(W1).to(Scale.dtype)
             Err1 = torch.zeros_like(W1)
             Losses1 = torch.zeros_like(W1)
             Hinv1 = Hinv[i1:i2, i1:i2]
@@ -116,8 +122,12 @@ class GPTQ:
                             idx = perm[idx]
                         self.quantizer = groups[idx // groupsize]
 
-                q = self.quantizer.quantize(w.unsqueeze(1)).flatten()
-                Q1[:, i] = q
+                q, int_weight, scale = self.quantizer.fake_quantize(w.unsqueeze(1))
+                Q1[:, i] = q.flatten()
+                q = q.flatten()
+                W_int1[:, i] = int_weight.flatten()
+                Scale1[:, i] = scale.flatten()
+
                 Losses1[:, i] = (w - q) ** 2 / d**2
 
                 err1 = (w - q) / d
@@ -125,6 +135,8 @@ class GPTQ:
                 Err1[:, i] = err1
 
             Q[:, i1:i2] = Q1
+            W_int[:, i1:i2] = W_int1
+            Scale[:, i1:i2] = Scale1
             Losses[:, i1:i2] = Losses1 / 2
 
             W[:, i2:] -= Err1.matmul(Hinv[i1:i2, i2:])
@@ -134,6 +146,11 @@ class GPTQ:
         if actorder:
             Q = Q[:, invperm]
 
+        if export_to_et:
+            self.layer.register_buffer(
+                "int_weight", W_int.reshape(self.layer.weight.shape)
+            )
+            self.layer.register_buffer("scale", Scale)
         self.layer.weight.data = Q.reshape(self.layer.weight.shape).to(
             self.layer.weight.data.dtype
         )
@@ -265,6 +282,7 @@ def gptq_fwrd(model, dataloader, dev, args):
                     groupsize=layer_w_groupsize,
                     actorder=args.act_order,
                     static_groups=False,
+                    export_to_et=args.export_to_et,
                 )
                 quantizers["model.layers.%d.%s" % (i, name)] = gptq[name].quantizer
                 gptq[name].free()
@@ -290,12 +308,15 @@ def gptq_fwrd(model, dataloader, dev, args):
 
 
 @torch.no_grad()
-def rtn_fwrd(model, dev, args):
+def rtn_fwrd(model, dev, args, custom_layers=None):
     """
     From GPTQ repo
     """
-    assert args.w_groupsize == -1, "Groupsize not supported in RTN!"
-    layers = model.model.layers
+    # assert args.w_groupsize == -1, "Groupsize not supported in RTN!"
+    if custom_layers:
+        layers = custom_layers
+    else:
+        layers = model.model.layers
     torch.cuda.empty_cache()
 
     quantizers = {}
@@ -303,7 +324,9 @@ def rtn_fwrd(model, dev, args):
     for i in tqdm.tqdm(range(len(layers)), desc="(RtN Quant.) Layers"):
         layer = layers[i].to(dev)
 
-        subset = quant_utils.find_qlayers(layer, layers=[torch.nn.Linear])
+        subset = quant_utils.find_qlayers(
+            layer, layers=[torch.nn.Linear, torch.nn.Embedding]
+        )
 
         for name in subset:
             layer_weight_bits = args.w_bits
@@ -312,20 +335,23 @@ def rtn_fwrd(model, dev, args):
                 continue
             if args.int8_down_proj and "down_proj" in name:
                 layer_weight_bits = 8
-
+            if args.export_to_et:
+                layer_weight_bits = 4  # all 4 bits for executorch export
             quantizer = quant_utils.WeightQuantizer()
             quantizer.configure(
                 layer_weight_bits,
                 perchannel=True,
                 sym=not (args.w_asym),
                 mse=args.w_clip,
+                weight_groupsize=args.w_groupsize,
             )
             W = subset[name].weight.data
             quantizer.find_params(W)
-            subset[name].weight.data = quantizer.quantize(W).to(
-                next(iter(layer.parameters())).dtype
-            )
-
+            q, int_weight, scale = quantizer.fake_quantize(W)
+            subset[name].weight.data = q.to(next(iter(layer.parameters())).dtype)
+            if args.export_to_et:
+                subset[name].register_buffer("int_weight", int_weight)
+                subset[name].register_buffer("scale", scale)
             quantizers["model.layers.%d.%s" % (i, name)] = quantizer.cpu()
         layers[i] = layer.cpu()
         torch.cuda.empty_cache()

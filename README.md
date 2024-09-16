@@ -40,15 +40,23 @@ If you find our code useful for your research, please consider citing:
 Step 1: Optimize Rotation Matrix
 * For LLaMA-2 7B/13B and LLaMA-3 8B models:  
   bash `10_optimize_rotation.sh $model_name $w_bit $a_bit $kv_bit`  
-  e.g., `bash 10_optimize_rotation.sh meta-llama/Llama-2-7b 4 4 4` for 4-bit weight 4-bit activation and 4-bit kv-cache on Llama-2-7b model.
+  e.g., `bash scripts/10_optimize_rotation.sh meta-llama/Llama-2-7b 4 4 4` for 4-bit weight 4-bit activation and 4-bit kv-cache on Llama-2-7b model.
 * For LLaMA-2 70B and LLaMA-3 70B models:  
   bash `11_optimize_rotation_fsdp.sh $model_name $w_bit $a_bit $kv_bit`  
-  e.g., `bash 11_optimize_rotation_fsdp.sh meta-llama/Llama-2-70b 4 4 4` for 4-bit weight 4-bit activation and 4-bit kv-cache on Llama-2-70b model.
+  e.g., `bash scripts/11_optimize_rotation_fsdp.sh meta-llama/Llama-2-70b 4 4 4` for 4-bit weight 4-bit activation and 4-bit kv-cache on Llama-2-70b model.
 
 Step 2: Run PTQ evaluation with optimized rotation  
-* bash `2_eval_ptq.sh $model_name $w_bit $a_bit $kv_bit`
+* `bash scripts/2_eval_ptq.sh $model_name $w_bit $a_bit $kv_bit`
+
+### 3. Export to ExecuTorch
+We also support exporting the quantized model to ExecuTorch, which allows us to utilize the quantization kernels and achieve real-time speedup. For more information on kernel implementation details, please see [ExecuTorch](https://pytorch.org/executorch/stable/index.html), and [ExecuTorch for LLaMA](https://github.com/pytorch/executorch/blob/main/examples/models/llama2/README.md). We currently support 4-bit weight (group-size 32) and 8-bit dynamic activation quantization.
+
+To obtain ExecuTorch-compatible quantized models, you can use the following scripts:
+
+* `bash scripts/31_optimize_rotation_executorch.sh $model_name`
+* `bash scripts/32_eval_ptq_executorch.sh $model_name`
   
-Others
+### Note
 * If using GPTQ quantization method in Step 2 for quantizing both weight and activations, we optimize the rotation matrices with respect to a network where only activations are quantized.   
   e.g. `bash 10_optimize_rotation.sh meta-llama/Llama-2-7b 16 4 4` followed by `bash 2_eval_ptq.sh meta-llama/Llama-2-7b 4 4 4` with the `--optimized_rotation_path` pointing to the rotation optimized for W16A4KV4.
   
@@ -63,7 +71,8 @@ Others
 - `--v_bits`: The number of bits for value quantization
 - `--k_bits`: The number of bits for key quantization
 - `--w_clip`: Whether using the grid search to find best weight clipping range
-- `--w_rtn`: Whether we want to use round-to-nearest quantization. If not having `--w_rtn`, we are using GPTQ quantization. 
+- `--w_rtn`: Whether we want to use round-to-nearest quantization. If not having `--w_rtn`, we are using GPTQ quantization.
+- `--w_groupsize`: The group size for group-wise weight quantization.
 - `--rotate`: Whether we want to rotate the model
 - `--optimized_rotation_path`: The checkpoint path of optimized rotation; Use random rotation if path is not given
 

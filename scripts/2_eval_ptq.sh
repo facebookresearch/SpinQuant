@@ -13,6 +13,7 @@ torchrun --nnodes=1 --nproc_per_node=1 ptq.py \
 --model_max_length 2048 \
 --fp16 False \
 --bf16 True \
+--save_safetensors False \
 --w_bits $2 \
 --a_bits $3 \
 --k_bits $4 \
@@ -25,3 +26,4 @@ torchrun --nnodes=1 --nproc_per_node=1 ptq.py \
 --v_groupsize 128 \
 --rotate \
 --optimized_rotation_path "your_path/R.bin" \
+

@@ -13,6 +13,10 @@ import transformers
 
 from eval_utils import gptq_utils, rotation_utils
 from utils import data_utils, fuse_norm_utils, hadamard_utils, quant_utils, utils
+from utils.convert_to_executorch import (
+    sanitize_checkpoint_from_spinquant,
+    write_model_llama,
+)
 
 
 def ptq_model(args, model, model_args=None):
@@ -58,6 +62,15 @@ def ptq_model(args, model, model_args=None):
                 seqlen=2048,
                 eval_mode=False,
             )
+            if args.export_to_et:
+                # quantize embedding layer and lm_head with rtn for executorch
+                quantizers = gptq_utils.rtn_fwrd(
+                    model,
+                    "cuda",
+                    args,
+                    custom_layers=[model.model.embed_tokens, model.lm_head],
+                )
+            # quantize other layers with gptq
             quantizers = gptq_utils.gptq_fwrd(model, trainloader, "cuda", args)
             save_dict["w_quantizers"] = quantizers
         else:  # RTN Weight Quantization
@@ -66,6 +79,13 @@ def ptq_model(args, model, model_args=None):
 
         if args.save_qmodel_path:
             save_dict["model"] = model.state_dict()
+            if args.export_to_et:
+                save_dict = write_model_llama(
+                    model.state_dict(), model.config, num_shards=1
+                )[0]  # Export num_shards == 1 for executorch
+                save_dict = sanitize_checkpoint_from_spinquant(
+                    save_dict, group_size=args.w_groupsize
+                )
             torch.save(save_dict, args.save_qmodel_path)
 
     # Add Input Quantization

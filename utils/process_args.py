@@ -14,6 +14,7 @@ from typing import Optional, Tuple
 import argparse
 import transformers
 
+
 @dataclass
 class ModelArguments:
     input_model: Optional[str] = field(
@@ -219,6 +220,12 @@ def parser_gen():
         default=None,
         help="Save the quantized model to the specified path!",
     )
+    parser.add_argument(
+        "--export_to_et",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Export the quantized model to executorch and save in save_qmodel_path",
+    )
 
     # Experiments Arguments
     parser.add_argument(
@@ -233,9 +240,9 @@ def parser_gen():
 
     args, unknown = parser.parse_known_args()
 
-    assert (
-        args.a_groupsize == args.w_groupsize
-    ), "a_groupsize should be the same as w_groupsize!"
+    # assert (
+    #     args.a_groupsize == args.w_groupsize
+    # ), "a_groupsize should be the same as w_groupsize!"
     assert args.k_pre_rope is False, "Pre-RoPE quantization is not supported yet!"
 
     return args, unknown
@@ -246,12 +253,8 @@ def process_args_ptq():
 
     ptq_args, unknown_args = parser_gen()
 
-    parser = transformers.HfArgumentParser(
-        (ModelArguments, TrainingArguments)
-    )
-    model_args, training_args = parser.parse_args_into_dataclasses(
-        args=unknown_args
-    )
+    parser = transformers.HfArgumentParser((ModelArguments, TrainingArguments))
+    model_args, training_args = parser.parse_args_into_dataclasses(args=unknown_args)
     if model_args.optimized_rotation_path is not None:
         ptq_args.optimized_rotation_path = model_args.optimized_rotation_path
     else:

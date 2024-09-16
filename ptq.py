@@ -33,6 +33,7 @@ def train() -> None:
         pretrained_model_name_or_path=model_args.input_model,
         torch_dtype=dtype,
     )
+    model.cuda()
 
     model = ptq_model(ptq_args, model, model_args)
     model.seqlen = training_args.model_max_length

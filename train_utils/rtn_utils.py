@@ -20,7 +20,7 @@ def rtn_fwrd(model, dev, args):
     """
     From GPTQ repo
     """
-    assert args.w_groupsize == -1, "Groupsize not supported in RTN!"
+    # assert args.w_groupsize == -1, "Groupsize not supported in RTN!"
     layers = model.model.layers
     torch.cuda.empty_cache()
 
@@ -47,6 +47,7 @@ def rtn_fwrd(model, dev, args):
                 perchannel=True,
                 sym=not (args.w_asym),
                 mse=args.w_clip,
+                weight_groupsize=args.w_groupsize,
             )
             subset[name].quantizer = quantizer
 
