@@ -37,6 +37,8 @@ If you find our code useful for your research, please consider citing:
   pip install .
    
 ### 2. Steps to run:
+For the scripts here, set `output_rotation_path` `output_dir` `logging_dir` `optimized_rotation_path` to your own locations.
+
 Step 1: Optimize Rotation Matrix
 * For LLaMA-2 7B/13B and LLaMA-3 8B models:  
   bash `10_optimize_rotation.sh $model_name $w_bit $a_bit $kv_bit`  
