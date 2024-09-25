@@ -63,12 +63,12 @@ def ptq_model(args, model, model_args=None):
                 eval_mode=False,
             )
             if args.export_to_et:
-                # quantize lm_head with rtn for executorch
+                # quantize lm_head and embedding with 8bit per-channel quantization with rtn for executorch
                 quantizers = gptq_utils.rtn_fwrd(
                     model,
                     "cuda",
                     args,
-                    custom_layers=[model.lm_head],
+                    custom_layers=[model.model.embed_tokens, model.lm_head],
                 )
             # quantize other layers with gptq
             quantizers = gptq_utils.gptq_fwrd(model, trainloader, "cuda", args)

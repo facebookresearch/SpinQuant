@@ -240,23 +240,29 @@ def write_model_llama(
         ].clone()
 
     list_embed_tokens_weight = shard_tensor(
-        hf_state_dict["model.embed_tokens.weight"], 1, num_shards
+        hf_state_dict["model.embed_tokens.int_weight"], 1, num_shards
     )
     list_lm_head_weight = shard_tensor(
         hf_state_dict["lm_head.module.int_weight"], 0, num_shards
     )
     for shard_i in range(num_shards):
-        model_shard_dicts[shard_i]["tok_embeddings.weight"] = list_embed_tokens_weight[
-            shard_i
-        ].clone()
+        model_shard_dicts[shard_i]["tok_embeddings.weight"] = (
+            list_embed_tokens_weight[shard_i].clone().to(torch.int8)
+        )
         model_shard_dicts[shard_i]["output.weight"] = (
             list_lm_head_weight[shard_i].clone().to(torch.int8)
         )
 
+    list_embed_tokens_weight = shard_tensor(
+        hf_state_dict["model.embed_tokens.scale"], 1, num_shards
+    )
     list_lm_head_weight = shard_tensor(
         hf_state_dict["lm_head.module.scale"], 0, num_shards
     )
     for shard_i in range(num_shards):
+        model_shard_dicts[shard_i]["tok_embeddings.scale"] = (
+            list_embed_tokens_weight[shard_i].clone().to(torch.float)
+        )
         model_shard_dicts[shard_i]["output.scale"] = (
             list_lm_head_weight[shard_i].clone().to(torch.float)
         )

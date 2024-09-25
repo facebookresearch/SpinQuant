@@ -330,20 +330,22 @@ def rtn_fwrd(model, dev, args, custom_layers=None):
 
         for name in subset:
             layer_weight_bits = args.w_bits
+            w_groupsize = args.w_groupsize
             if "lm_head" in name:
                 layer_weight_bits = 16
                 continue
             if args.int8_down_proj and "down_proj" in name:
                 layer_weight_bits = 8
             if args.export_to_et:
-                layer_weight_bits = 4  # all 4 bits for executorch export
+                layer_weight_bits = 8  # all per channel 8 bits for executorch export
+                w_groupsize = -1
             quantizer = quant_utils.WeightQuantizer()
             quantizer.configure(
                 layer_weight_bits,
                 perchannel=True,
                 sym=not (args.w_asym),
                 mse=args.w_clip,
-                weight_groupsize=args.w_groupsize,
+                weight_groupsize=w_groupsize,
             )
             W = subset[name].weight.data
             quantizer.find_params(W)
