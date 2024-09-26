@@ -11,7 +11,7 @@ from logging import Logger
 import torch
 import torch.distributed as dist
 from transformers import LlamaTokenizerFast
-
+import transformers
 from eval_utils.main import ptq_model
 from eval_utils.modeling_llama import LlamaForCausalLM
 from utils import data_utils, eval_utils, utils
@@ -28,11 +28,20 @@ def train() -> None:
     log.info("the rank is {}".format(local_rank))
     torch.distributed.barrier()
 
+    config = transformers.AutoConfig.from_pretrained(model_args.input_model)
+    # Llama v3.2 specific: Spinquant is not compatiable with tie_word_embeddings, clone lm_head from embed_tokens
+    process_word_embeddings = False
+    if config.tie_word_embeddings:
+        config.tie_word_embeddings = False
+        process_word_embeddings = True
     dtype = torch.bfloat16 if training_args.bf16 else torch.float16
     model = LlamaForCausalLM.from_pretrained(
         pretrained_model_name_or_path=model_args.input_model,
+        config=config,
         torch_dtype=dtype,
     )
+    if process_word_embeddings:
+        model.lm_head.weight.data = model.model.embed_tokens.weight.data.clone()
     model.cuda()
 
     model = ptq_model(ptq_args, model, model_args)
