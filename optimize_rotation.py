@@ -47,7 +47,9 @@ def train() -> None:
     log.info("the rank is {}".format(local_rank))
     torch.distributed.barrier()
 
-    config = transformers.AutoConfig.from_pretrained(model_args.input_model)
+    config = transformers.AutoConfig.from_pretrained(
+        model_args.input_model, token=model_args.access_token
+    )
 
     # Llama v3.2 specific: Spinquant is not compatiable with tie_word_embeddings, clone lm_head from embed_tokens
     process_word_embeddings = False
@@ -59,6 +61,7 @@ def train() -> None:
         pretrained_model_name_or_path=model_args.input_model,
         config=config,
         torch_dtype=dtype,
+        token=model_args.access_token,
     )
     if process_word_embeddings:
         model.lm_head.weight.data = model.model.embed_tokens.weight.data.clone()
@@ -85,6 +88,7 @@ def train() -> None:
         use_fast=True,
         add_eos_token=False,
         add_bos_token=False,
+        token=model_args.access_token,
     )
     log.info("Complete tokenizer loading...")
     model.config.use_cache = False

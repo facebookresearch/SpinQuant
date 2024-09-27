@@ -26,6 +26,10 @@ class ModelArguments:
     optimized_rotation_path: Optional[str] = field(
         default=None, metadata={"help": "Optimized rotation checkpoint path"}
     )
+    access_token: Optional[str] = field(
+        default=None,
+        metadata={"help": "Huggingface access token to access gated repo like Llama"},
+    )
 
 
 @dataclass

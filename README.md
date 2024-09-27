@@ -37,7 +37,7 @@ If you find our code useful for your research, please consider citing:
   pip install .
    
 ### 2. Steps to run:
-For the scripts here, set `output_rotation_path` `output_dir` `logging_dir` `optimized_rotation_path` to your own locations.
+For the scripts here, set `output_rotation_path` `output_dir` `logging_dir` `optimized_rotation_path` to your own locations. For gated repo such as meta-llama, you can set your HF token to `access_token`.
 
 Step 1: Optimize Rotation Matrix
 * For LLaMA-2 7B/13B and LLaMA-3 8B models:  
