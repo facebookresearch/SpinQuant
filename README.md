@@ -31,10 +31,11 @@ If you find our code useful for your research, please consider citing:
 
 ### 1. Requirements:
 * python 3.9, pytorch >= 2.0
+* install pytorch with cuda from https://pytorch.org/get-started/locally/, it is prerequisite for fast-hadamard-transform package.
 * pip install -r requirement.txt
 * git clone https://github.com/Dao-AILab/fast-hadamard-transform.git  
-  cd fast-hadamard-transform  
-  pip install .
+* cd fast-hadamard-transform  
+* pip install .
    
 ### 2. Steps to run:
 For the scripts here, set `output_rotation_path` `output_dir` `logging_dir` `optimized_rotation_path` to your own locations. For gated repo such as meta-llama, you can set your HF token to `access_token`.
@@ -59,7 +60,8 @@ To obtain ExecuTorch-compatible quantized models, you can use the following scri
 
 * `bash scripts/31_optimize_rotation_executorch.sh $model_name`
 * `bash scripts/32_eval_ptq_executorch.sh $model_name`
-  
+
+We also provide an example [colab notebook](https://colab.research.google.com/gist/zxdmike/abbb2c9b0d1fd1f4ed8cdae8c02180f4) to train and export ExecuTorch compatiable Llama 3.2 models
 ### Note
 * If using GPTQ quantization method in Step 2 for quantizing both weight and activations, we optimize the rotation matrices with respect to a network where only activations are quantized.   
   e.g. `bash 10_optimize_rotation.sh meta-llama/Llama-2-7b 16 4 4` followed by `bash 2_eval_ptq.sh meta-llama/Llama-2-7b 4 4 4` with the `--optimized_rotation_path` pointing to the rotation optimized for W16A4KV4.
