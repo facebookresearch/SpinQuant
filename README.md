@@ -15,6 +15,12 @@ As a result, SpinQuant narrows the accuracy gap of W4A4KV4 quantization with ful
 <img width=80% src="./SpinQuant.png"/>
 </div>
 
+## News
+- Oct 24, 2024: 🚀 SpinQuant supported the live demo in Meta Connect [[post](https://ai.meta.com/blog/meta-llama-quantized-lightweight-models/)]. We also made our 4-bit quantized LLaMA SpinQuant model publicly available [[post](https://ai.meta.com/blog/meta-llama-quantized-lightweight-models/)] [[Llama-3.2-1B-Instruct-SpinQuant_INT4](https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct-SpinQuant_INT4_EO8)] [[Llama-3.2-3B-Instruct-SpinQuant_INT4](https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct-SpinQuant_INT4_EO8)].
+
+https://github.com/user-attachments/assets/e7bebfd5-ef13-440f-8066-7bf9205ad309
+
+
 
 ## Citation
 
