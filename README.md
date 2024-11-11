@@ -60,7 +60,7 @@ After obtaining the optimized_rotation, put the rotation matrix into optimized_r
 * `bash scripts/2_eval_ptq.sh $model_name $w_bit $a_bit $kv_bit`
 
 ### 3. Export to ExecuTorch
-We also support exporting the quantized model to ExecuTorch, which allows us to utilize the quantization kernels and achieve real-time speedup. For more information on kernel implementation details, please see [ExecuTorch](https://pytorch.org/executorch/stable/index.html), and [ExecuTorch for LLaMA](https://github.com/pytorch/executorch/blob/main/examples/models/llama2/README.md). We currently support 4-bit weight (set group-size to 256 for 8B model and to 32 for smaller model) and 8-bit dynamic activation quantization.
+We also support exporting the quantized model to ExecuTorch, which allows us to utilize the quantization kernels and achieve real-time speedup. For more information on kernel implementation details, please see [ExecuTorch](https://pytorch.org/executorch/stable/index.html), and [ExecuTorch with SpinQuant](https://github.com/pytorch/executorch/tree/5b51bb8b676ee79a1a0aeb52869a71c6fad6a291/examples/models/llama#spinquant). We currently support 4-bit weight (set group-size to 256 for 8B model and to 32 for smaller model) and 8-bit dynamic activation quantization.
 
 To obtain ExecuTorch-compatible quantized models, you can use the following scripts:
 
