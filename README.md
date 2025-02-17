@@ -4,9 +4,9 @@ This repository contains the code of SpinQuant introduced in our work: "[SpinQua
 
 In this work, we found that 
 
-1. Rotation is a principle way to remove outliers in the LLMs and assist quantization; 
-2. Not all rotation helps equally and random rotations produce a large variance in quantized models; 
-3. Learning rotation with Cayley optimization greatly enhance the final performance.
+1. Rotation is a principal way to remove outliers in the LLMs and assist quantization; 
+2. Not all rotations help equally and random rotations produce a large variance in quantized models; 
+3. Learning rotation with Cayley optimization greatly enhances the final performance.
 
 As a result, SpinQuant narrows the accuracy gap of W4A4KV4 quantization with full precision to merely 2.9 points for the LLaMA-2 7B model on zero-shot reasoning tasks, surpassing LLM-QAT by 19.1 points and SmoothQuant by 25.0 points.
 
@@ -67,7 +67,7 @@ To obtain ExecuTorch-compatible quantized models, you can use the following scri
 * `bash scripts/31_optimize_rotation_executorch.sh $model_name`
 * `bash scripts/32_eval_ptq_executorch.sh $model_name`
 
-We also provide an example [colab notebook](https://colab.research.google.com/gist/zxdmike/abbb2c9b0d1fd1f4ed8cdae8c02180f4) to train and export ExecuTorch compatiable Llama 3.2 models
+We also provide an example [colab notebook](https://colab.research.google.com/gist/zxdmike/abbb2c9b0d1fd1f4ed8cdae8c02180f4) to train and export ExecuTorch compatible Llama 3.2 models
 ### Note
 * If using GPTQ quantization method in Step 2 for quantizing both weight and activations, we optimize the rotation matrices with respect to a network where only activations are quantized.   
   e.g. `bash 10_optimize_rotation.sh meta-llama/Llama-2-7b 16 4 4` followed by `bash 2_eval_ptq.sh meta-llama/Llama-2-7b 4 4 4` with the `--optimized_rotation_path` pointing to the rotation optimized for W16A4KV4.
@@ -75,7 +75,7 @@ We also provide an example [colab notebook](https://colab.research.google.com/gi
 ### Arguments 
 
 - `--input_model`: The model name (or path to the weights)
-- `--output_rotation_path`: The local path we want to store the oprimized rotation matrix
+- `--output_rotation_path`: The local path we want to store the optimized rotation matrix
 - `--per_device_train_batch_size`: The batch size for rotation optimization
 - `--per_device_eval_batch_size`: The batch size for PPL evaluation
 - `--a_bits`: The number of bits for activation quantization
@@ -120,7 +120,7 @@ You can download the optimized rotation matrices [here](https://drive.google.com
 
 ## Acknowledgement
 
-The results reported in the paper is run with the internal LLaMA codebase in Meta. We reproduced our experiments with HuggingFace codebase and released code here, which partially based on [HuggingFace transformers](https://github.com/huggingface/transformers), [QuaRot](https://github.com/spcl/QuaRot), [QuIP\#](https://github.com/Cornell-RelaxML/quip-sharp) and [Optimization-on-Stiefel-Manifold-via-Cayley-Transform](https://github.com/JunLi-Galios/Optimization-on-Stiefel-Manifold-via-Cayley-Transform/tree/master). SpinQuant is available in [LLMC](https://github.com/ModelTC/llmc/tree/dev_spinquant/configs/quantization/SpinQuant), an Efficient LLM Compression Toolkit. 
+The results reported in the paper are run with the internal LLaMA codebase in Meta. We reproduced our experiments with HuggingFace codebase and released code here, which is partially based on [HuggingFace transformers](https://github.com/huggingface/transformers), [QuaRot](https://github.com/spcl/QuaRot), [QuIP\#](https://github.com/Cornell-RelaxML/quip-sharp) and [Optimization-on-Stiefel-Manifold-via-Cayley-Transform](https://github.com/JunLi-Galios/Optimization-on-Stiefel-Manifold-via-Cayley-Transform/tree/master). SpinQuant is available in [LLMC](https://github.com/ModelTC/llmc/tree/dev_spinquant/configs/quantization/SpinQuant), an Efficient LLM Compression Toolkit. 
 
 ## Contact
 
