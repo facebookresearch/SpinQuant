@@ -45,4 +45,5 @@ python liteml_state_dict.py --spinquant_path saved_models/spinquant_gptq_group12
 * **liteml_path** - path to save the exported state dict file in LiteML format
 * **true_quant** argument should be used to run this model in LiteML in "True Quant" mode, meaning that in each quantized layer, the weights and activations are first quantized, then multiplied and finally dequantized. If --true_quant is not used, during inference in LiteML the weights and activations are being quantized and dequantized before they are multiplied.
 * **group_size** - group size used for activations and weights in group quantization
+* **fuse_lm_head** - argument should be used to fuse lm_head layer with the last RMSNorm as a single layer. This changes the state dict file that will be given to LiteML.
 
