@@ -43,7 +43,7 @@ python liteml_state_dict.py --spinquant_path saved_models/spinquant_gptq_group12
 ```
 
 ### Export with True Quant and fused lm_head
-The following command line is used to export the state dict file with TrueQuantRMSNorm layer and fused lm_head. The exported state dict can be run with a LiteML configuration that uses TrueQuantRMSNorm. The fusion is done between the last TrueQuantRMSNorm layer and the lm_head layer.
+The following command line is used to export the state dict file with TrueQuantRMSNorm layer and fused lm_head. The exported state dict can be run with a LiteML configuration that uses TrueQuantRMSNorm. The fusion is done between the last RMSNorm layer and the lm_head layer.
 
 ```
 python liteml_state_dict.py --spinquant_path saved_models/spinquant_gptq_group128.pth --liteml_path saved_models/liteml_spinquant_gptq_group128_true_quant_fuse_lm_head.pth --true_quant --fuse_lm_head --group_size 128
