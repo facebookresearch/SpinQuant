@@ -17,12 +17,16 @@ Follow the installation instructions in (https://github.com/facebookresearch/Spi
 git clone https://github.com/CEVA-AI-Labs/SpinQuant
 cd SpinQuant
 pip install -r requirement.txt
-git clone https://github.com/Dao-AILab/fast-hadamard-transform.git
-cd fast-hadamard-transform
-pip install .
+git clone --depth 1 https://github.com/Dao-AILab/fast-hadamard-transform.git && cd fast-hadamard-transform && git fetch --depth 1 origin d1a56eee9d502e67faacf61b7b947180d66b32a0 && git checkout FETCH_HEAD
 ```
 
-Important note: before installing fast-hadamard-transform package, change os.rename(wheel_filename, wheel_path to shutil.move(wheel_filename, wheel_path) in run method of CachedWheelsCommand class in setup.py file of fast-hadamard-transform package.
+In setup.py file in  fast-hadamard-transform folder change os.rename(wheel_filename, wheel_path) to shutil.move(wheel_filename, wheel_path) in line 217 and add import shutil.
+
+```
+cd fast-hadamard-transform
+pip install --no-build-isolation .
+```
+
 
 # Run
 ## Applying rotations
