@@ -3,18 +3,27 @@ import argparse
 from collections import OrderedDict
 
 
+def convert_spinquant_zp_for_liteml(value):
+    """Convert SpinQuant asymmetric zero-points (unsigned domain) to LiteML signed qint domain."""
+    if getattr(value, "sym", True):
+        return value.zero
+    shift = 2 ** (int(value.bits) - 1)
+    return value.zero - shift
+
+
 def export(state_dict, group_size):
     """ Exports state_dict to LiteML format. Used to load the state dict outside LiteML's RetrainerModel class"""
     liteml_state_dict = dict()
     for key, value in state_dict['w_quantizers'].items():
         prefix = key.split('.module')[0]
         weights_quantizer_prefix = f"_model._model.{prefix}._weights_quantizer.obs"
+        zp = convert_spinquant_zp_for_liteml(value)
         if group_size > -1:
             liteml_state_dict[f"{weights_quantizer_prefix}.scale_factor"] = value.scale[None, :, :, None]
-            liteml_state_dict[f"{weights_quantizer_prefix}.zp"] = value.zero[None, :, :, None]
+            liteml_state_dict[f"{weights_quantizer_prefix}.zp"] = zp[None, :, :, None]
         else:
             liteml_state_dict[f"{weights_quantizer_prefix}.scale_factor"] = value.scale
-            liteml_state_dict[f"{weights_quantizer_prefix}.zp"] = value.zero
+            liteml_state_dict[f"{weights_quantizer_prefix}.zp"] = zp
 
 
     for key, value in state_dict['model'].items():
@@ -42,12 +51,13 @@ def export_retrainer_model(state_dict, group_size):
     for key, value in state_dict['w_quantizers'].items():
         prefix = key.split('.module')[0]
         weights_quantizer_prefix = f"{prefix}._weights_quantizer.obs"
+        zp = convert_spinquant_zp_for_liteml(value)
         if group_size > -1:
             liteml_state_dict[f"{weights_quantizer_prefix}.scale_factor"] = value.scale[None, :, :, None]
-            liteml_state_dict[f"{weights_quantizer_prefix}.zp"] = value.zero[None, :, :, None]
+            liteml_state_dict[f"{weights_quantizer_prefix}.zp"] = zp[None, :, :, None]
         else:
             liteml_state_dict[f"{weights_quantizer_prefix}.scale_factor"] = value.scale
-            liteml_state_dict[f"{weights_quantizer_prefix}.zp"] = value.zero
+            liteml_state_dict[f"{weights_quantizer_prefix}.zp"] = zp
 
 
     for key, value in state_dict['model'].items():
@@ -72,12 +82,13 @@ def export_retrainer_model_TrueQuantRMSNorm(state_dict, group_size):
     for key, value in state_dict['w_quantizers'].items():
         prefix = key.split('.module')[0]
         weights_quantizer_prefix = f"{prefix}._weights_quantizer.obs"
+        zp = convert_spinquant_zp_for_liteml(value)
         if group_size > -1:
             liteml_state_dict[f"{weights_quantizer_prefix}.scale_factor"] = value.scale[None, :, :, None]
-            liteml_state_dict[f"{weights_quantizer_prefix}.zp"] = value.zero[None, :, :, None]
+            liteml_state_dict[f"{weights_quantizer_prefix}.zp"] = zp[None, :, :, None]
         else:
             liteml_state_dict[f"{weights_quantizer_prefix}.scale_factor"] = value.scale
-            liteml_state_dict[f"{weights_quantizer_prefix}.zp"] = value.zero
+            liteml_state_dict[f"{weights_quantizer_prefix}.zp"] = zp
 
 
     for key, value in state_dict['model'].items():
@@ -103,12 +114,13 @@ def export_retrainer_model_fuse_lm_head_TrueQuantRMSNorm(state_dict, group_size,
     for key, value in state_dict['w_quantizers'].items():
         prefix = key.split('.module')[0]
         weights_quantizer_prefix = f"{prefix}._weights_quantizer.obs"
+        zp = convert_spinquant_zp_for_liteml(value)
         if group_size > -1:
             liteml_state_dict[f"{weights_quantizer_prefix}.scale_factor"] = value.scale[None, :, :, None]
-            liteml_state_dict[f"{weights_quantizer_prefix}.zp"] = value.zero[None, :, :, None]
+            liteml_state_dict[f"{weights_quantizer_prefix}.zp"] = zp[None, :, :, None]
         else:
             liteml_state_dict[f"{weights_quantizer_prefix}.scale_factor"] = value.scale
-            liteml_state_dict[f"{weights_quantizer_prefix}.zp"] = value.zero
+            liteml_state_dict[f"{weights_quantizer_prefix}.zp"] = zp
 
 
     for key, value in state_dict['model'].items():
