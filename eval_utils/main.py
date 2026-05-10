@@ -8,6 +8,7 @@
 # This code is based on QuaRot(https://github.com/spcl/QuaRot/tree/main/quarot).
 # Licensed under Apache License 2.0.
 
+import os
 import torch
 import transformers
 
@@ -79,6 +80,7 @@ def ptq_model(args, model, model_args=None):
 
         if args.save_qmodel_path:
             save_dict["model"] = model.state_dict()
+            os.makedirs(os.path.dirname(args.save_qmodel_path), exist_ok=True)
             if args.export_to_et:
                 save_dict = write_model_llama(
                     model.state_dict(), model.config, num_shards=1

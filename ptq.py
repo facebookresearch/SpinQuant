@@ -9,11 +9,9 @@ import datetime
 from logging import Logger
 
 import torch
-import torch.distributed as dist
-from transformers import LlamaTokenizerFast
+# import torch.distributed as dist
 import transformers
 from eval_utils.main import ptq_model
-from eval_utils.modeling_llama import LlamaForCausalLM
 from utils import data_utils, eval_utils, utils
 from utils.process_args import process_args_ptq
 
@@ -32,18 +30,29 @@ def train() -> None:
     config = transformers.AutoConfig.from_pretrained(
         model_args.input_model, token=model_args.access_token
     )
-    # Llama v3.2 specific: Spinquant is not compatiable with tie_word_embeddings, clone lm_head from embed_tokens
+    # Llama v3.2 specific: Spinquant is not compatible with tie_word_embeddings, clone lm_head from embed_tokens
     process_word_embeddings = False
     if config.tie_word_embeddings:
         config.tie_word_embeddings = False
         process_word_embeddings = True
     dtype = torch.bfloat16 if training_args.bf16 else torch.float16
-    model = LlamaForCausalLM.from_pretrained(
+
+    # Some architectures (e.g. Qwen2) require eager attention to avoid issues
+    # with custom attention implementations during quantization/rotation.
+    # Note: DeepSeek-R1-Distill-Qwen models also use model_type="qwen2" and are covered here.
+    _EAGER_ATTN_ARCHS = {"qwen2"}
+    arch = getattr(config, "model_type", "").lower()
+    model_kwargs = dict(
         pretrained_model_name_or_path=model_args.input_model,
         config=config,
         torch_dtype=dtype,
         token=model_args.access_token,
+        cache_dir=training_args.cache_dir,
     )
+    if arch in _EAGER_ATTN_ARCHS:
+        model_kwargs["attn_implementation"] = "eager"
+
+    model = transformers.AutoModelForCausalLM.from_pretrained(**model_kwargs)
     if process_word_embeddings:
         model.lm_head.weight.data = model.model.embed_tokens.weight.data.clone()
     model.cuda()
@@ -53,15 +62,15 @@ def train() -> None:
     if local_rank == 0:
         log.info("Model PTQ completed {}".format(model))
         log.info("Start to load tokenizer...")
-    tokenizer = LlamaTokenizerFast.from_pretrained(
+    tokenizer = transformers.AutoTokenizer.from_pretrained(
         pretrained_model_name_or_path=model_args.input_model,
-        cache_dir=training_args.cache_dir,
         model_max_length=training_args.model_max_length,
         padding_side="right",
         use_fast=True,
         add_eos_token=False,
         add_bos_token=False,
         token=model_args.access_token,
+        cache_dir=training_args.cache_dir,
     )
     log.info("Complete tokenizer loading...")
     model.config.use_cache = False

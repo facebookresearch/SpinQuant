@@ -165,6 +165,13 @@ def apply_exact_had_to_linear(module, had_dim=-1, output=False, R2=None):
         hadK = hadamard_matrix(had_dim, "cuda").to(torch.float64)
         if R2 is not None:
             hadK = R2.to(torch.float64)
+            if module.bias is not None:
+                b = module.bias.data
+                b_shape = b.shape
+                b = b.reshape(-1, had_dim)
+                b = b.to(torch.float64) @ hadK
+                b = b.reshape(b_shape)
+                module.bias.data = b.to(device=dev, dtype=dtype)
         if output:
             W_ = W_.t()
             transposed_shape = W_.shape

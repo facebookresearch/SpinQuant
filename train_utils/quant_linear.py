@@ -45,6 +45,13 @@ class QuantizeLinear(nn.Linear):
                     temp = W_.reshape(-1, transposed_shape[-1] // had_dim, had_dim)
                     temp = temp.to(torch.float64) @ R2.to(torch.float64)
                     weight = temp.reshape(transposed_shape).t()
+                if self.bias is not None:
+                    b = self.bias.data
+                    b_shape = b.shape
+                    b = b.reshape(-1, had_dim)
+                    b = (b.to(torch.float64) @ R2.to(torch.float64)).to(dtype)
+                    b = b.reshape(b_shape)
+                    self.bias.data = b
             weight = weight.to(dtype)
         else:
             weight = self.weight
