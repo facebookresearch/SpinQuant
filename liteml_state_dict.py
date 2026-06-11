@@ -37,6 +37,9 @@ def export(state_dict, group_size):
         elif last == 'weight' and before_last != 'module':
             key_liteml = f"_model._model.{key.replace('weight','_model.weight')}"
             liteml_state_dict[key_liteml] = value
+        elif last == 'bias' and before_last != 'module':
+            key_liteml = f"{key.replace('bias','_model.bias')}"
+            liteml_state_dict[key_liteml] = value
 
     liteml_state_dict = OrderedDict(sorted(liteml_state_dict.items()))
     return liteml_state_dict
@@ -69,6 +72,9 @@ def export_retrainer_model(state_dict, group_size):
         elif last == 'weight' and before_last != 'module':
             key_liteml = f"{key.replace('weight','_model.weight')}"
             liteml_state_dict[key_liteml] = value
+        elif last == 'bias' and before_last != 'module':
+            key_liteml = f"{key.replace('bias','_model.bias')}"
+            liteml_state_dict[key_liteml] = value
 
     liteml_state_dict = OrderedDict(sorted(liteml_state_dict.items()))
     return liteml_state_dict
@@ -100,6 +106,9 @@ def export_retrainer_model_TrueQuantRMSNorm(state_dict, group_size):
             liteml_state_dict[key] = value
         elif last == 'weight' and before_last != 'module':
             key_liteml = f"{key.replace('weight','_model.weight')}"
+            liteml_state_dict[key_liteml] = value
+        elif last == 'bias' and before_last != 'module':
+            key_liteml = f"{key.replace('bias','_model.bias')}"
             liteml_state_dict[key_liteml] = value
 
     liteml_state_dict = OrderedDict(sorted(liteml_state_dict.items()))
@@ -142,6 +151,9 @@ def export_retrainer_model_fuse_lm_head_TrueQuantRMSNorm(state_dict, group_size,
             liteml_state_dict[key] = value
         elif last == 'weight' and before_last != 'module':
             key_liteml = f"{key.replace('weight','_model.weight')}"
+            liteml_state_dict[key_liteml] = value
+        elif last == 'bias' and before_last != 'module':
+            key_liteml = f"{key.replace('bias','_model.bias')}"
             liteml_state_dict[key_liteml] = value
 
     liteml_state_dict = OrderedDict(sorted(liteml_state_dict.items()))
