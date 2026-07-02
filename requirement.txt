@@ -1,4 +1,4 @@
-transformers==4.44.2
+transformers==4.51.0
 accelerate==0.34.2
 datasets==2.20.0
 sentencepiece

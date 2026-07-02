@@ -228,6 +228,12 @@ def gptq_fwrd(model, dataloader, dev, args):
             cache["i"] += 1
             cache["attention_mask"] = kwargs["attention_mask"]
             cache["position_ids"] = kwargs["position_ids"]
+            # transformers >= 4.51 computes position_embeddings (cos, sin) once in the
+            # top-level model forward and passes it to every decoder layer; the layer no
+            # longer derives it internally. Capture it here so the standalone layer calls
+            # below can forward it. On < 4.51 this kwarg is absent (-> None), which the
+            # older layer forward still accepts and computes internally.
+            cache["position_embeddings"] = kwargs.get("position_embeddings", None)
             raise ValueError
 
     layers[0] = Catcher(layers[0])
@@ -246,6 +252,7 @@ def gptq_fwrd(model, dataloader, dev, args):
     outs = torch.zeros_like(inps)
     attention_mask = cache["attention_mask"]
     position_ids = cache["position_ids"]
+    position_embeddings = cache["position_embeddings"]
 
     quantizers = {}
     sequential = [
@@ -300,6 +307,7 @@ def gptq_fwrd(model, dataloader, dev, args):
                     inps[j].unsqueeze(0),
                     attention_mask=attention_mask,
                     position_ids=position_ids,
+                    position_embeddings=position_embeddings,
                 )[0]
             for h in handles:
                 h.remove()
@@ -321,6 +329,7 @@ def gptq_fwrd(model, dataloader, dev, args):
                 inps[j].unsqueeze(0),
                 attention_mask=attention_mask,
                 position_ids=position_ids,
+                position_embeddings=position_embeddings,
             )[0]
 
         layers[i] = layer.cpu()

@@ -37,10 +37,10 @@ def train() -> None:
         process_word_embeddings = True
     dtype = torch.bfloat16 if training_args.bf16 else torch.float16
 
-    # Some architectures (e.g. Qwen2) require eager attention to avoid issues
+    # Some architectures (e.g. Qwen2/Qwen3) require eager attention to avoid issues
     # with custom attention implementations during quantization/rotation.
     # Note: DeepSeek-R1-Distill-Qwen models also use model_type="qwen2" and are covered here.
-    _EAGER_ATTN_ARCHS = {"qwen2"}
+    _EAGER_ATTN_ARCHS = {"qwen2", "qwen3"}
     arch = getattr(config, "model_type", "").lower()
     model_kwargs = dict(
         pretrained_model_name_or_path=model_args.input_model,

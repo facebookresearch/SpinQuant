@@ -3,6 +3,12 @@ import argparse
 from collections import OrderedDict
 
 
+# RMSNorm submodules exported as plain norm weights: kept as-is in the standard export,
+# renamed to "<name>._RMSnorm.weight" in TrueQuant mode (to match LiteML's TrueQuantRMSNorm).
+# Includes the Qwen3 per-head q_norm/k_norm in addition to the decoder layer norms.
+_NORM_MODULES = ('input_layernorm', 'post_attention_layernorm', 'q_norm', 'k_norm')
+
+
 def convert_spinquant_zp_for_liteml(value):
     """Convert SpinQuant asymmetric zero-points (unsigned domain) to LiteML signed qint domain."""
     if getattr(value, "sym", True):
@@ -65,7 +71,10 @@ def export_retrainer_model(state_dict, group_size):
 
     for key, value in state_dict['model'].items():
         last, before_last = key.split('.')[-1], key.split('.')[-2]
-        if 'layernorm' in key:
+        # Norm layers (incl. Qwen3 per-head q_norm/k_norm) are plain RMSNorm, not Linear
+        # modules — keep their keys as-is so they are not mangled into the quantized
+        # Linear "_model.weight" form.
+        if before_last in _NORM_MODULES:
             liteml_state_dict[key] = value
         elif key == 'model.embed_tokens.weight' or key == 'model.norm.weight':
             liteml_state_dict[key] = value
@@ -99,7 +108,7 @@ def export_retrainer_model_TrueQuantRMSNorm(state_dict, group_size):
 
     for key, value in state_dict['model'].items():
         last, before_last = key.split('.')[-1], key.split('.')[-2]
-        if 'layernorm' in key or key == 'model.norm.weight':
+        if before_last in _NORM_MODULES or key == 'model.norm.weight':
             key = key.replace('weight', '_RMSnorm.weight')  # change RMSnorm key according to TrueQuantRMSNorm implementation
             liteml_state_dict[key] = value
         elif key == 'model.embed_tokens.weight':
@@ -134,7 +143,7 @@ def export_retrainer_model_fuse_lm_head_TrueQuantRMSNorm(state_dict, group_size,
 
     for key, value in state_dict['model'].items():
         last, before_last = key.split('.')[-1], key.split('.')[-2]
-        if 'layernorm' in key:
+        if before_last in _NORM_MODULES:
             if true_quant:
                 key = key.replace('weight', '_RMSnorm.weight')  # change RMSnorm key according to TrueQuantRMSNorm implementation
             liteml_state_dict[key] = value

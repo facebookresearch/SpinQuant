@@ -60,6 +60,12 @@ def evaluator(model, testenc, dev, args):
             cache["i"] += 1
             cache["attention_mask"] = kwargs["attention_mask"]
             cache["position_ids"] = kwargs["position_ids"]
+            # transformers >= 4.51 computes position_embeddings (cos, sin) once in the
+            # top-level model forward and passes it to every decoder layer; the layer no
+            # longer derives it internally. Capture it here so the standalone layer calls
+            # below can forward it. On < 4.51 this kwarg is absent (-> None), which the
+            # older layer forward still accepts and computes internally.
+            cache["position_embeddings"] = kwargs.get("position_embeddings", None)
             raise ValueError
 
     layers[0] = Catcher(layers[0])
@@ -79,6 +85,7 @@ def evaluator(model, testenc, dev, args):
     torch.cuda.empty_cache()
     outs = [0] * nbatches
     attention_mask = cache["attention_mask"]
+    position_embeddings = cache["position_embeddings"]
 
     for i in tqdm(range(len(layers)), desc="(Eval) Layers"):
         layer = layers[i].to(dev)
@@ -97,6 +104,7 @@ def evaluator(model, testenc, dev, args):
                 attention_mask=attention_mask,
                 #  defined.
                 position_ids=position_ids,
+                position_embeddings=position_embeddings,
             )[0]
         layers[i] = layer.cpu()
         del layer
